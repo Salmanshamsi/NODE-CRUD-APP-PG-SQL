@@ -1,7 +1,8 @@
 import exress from "express"
 import { config } from "dotenv"
 import bodyParser from "body-parser";
-import todo from "./Routes/todo.mjs"
+import todo from "./Routes/todo.mjs";
+import Auth from './Routes/Auth.mjs'
 import pool from "./Postgres/db.mjs";
 
 
@@ -15,7 +16,14 @@ app.use(bodyParser.json());
 
 
 // api's..
-app.use("/todo",todo)
+
+app.use('/auth/v1',Auth);
+app.use("/todo",todo);
+app.use((reqs, resp) => {
+    resp.status(404).json({
+        error: 'Page not found'
+    });
+});
 
 // app listning..
 app.listen(PORT, () => {
