@@ -1,5 +1,7 @@
 import pool from "../Postgres/db.mjs"
+import { PrismaClient } from "@prisma/client";
 import { v4 as uuidv4 } from 'uuid';
+const prisma = new PrismaClient();
 
 
 const CreateUser = async (reqs, resp) => {
@@ -34,8 +36,6 @@ const CreateUser = async (reqs, resp) => {
 
     return;
 };
-
-
 const AuthanticateUser = async (reqs,resp) => {
     
     const {email, password} = reqs.body;
@@ -63,5 +63,62 @@ const AuthanticateUser = async (reqs,resp) => {
 
 
 }
+const CreateUser_v2 = async (reqs, resp) => {
+    const { name, email, password } = reqs.body;
 
-export {AuthanticateUser, CreateUser}
+    const id = uuidv4();
+
+    try {
+        const result = await prisma.user.create({data:{
+            name,
+            email,
+            password
+        }})
+
+        console.log(result);
+
+        resp.status(201).json({
+            message: 'User created successfully',
+            data: {
+                id,
+                name,
+                email
+            }
+        });
+    } catch (error) {
+        console.error('Error creating user:', error);
+
+        resp.status(500).json({
+            message: 'Failed to create user',
+            error: error.message
+        });
+    }
+
+    return;
+};
+const AuthanticateUser_v2 = async (reqs,resp) => {
+    
+    const {_email, _password} = reqs.body;
+
+    try{
+
+        const result = await prisma.user.findFirst({where:{email: _email,password:_password}})
+        
+        console.log(result);
+
+        resp.status(201).json({
+            message:"sign in sucessfully",
+        })
+
+    }catch(err){
+        console.error('error signin-',err);
+        resp.status(500).json({
+            message: 'Failed to signin user',
+            error: err.message
+        })
+    }
+
+
+}
+
+export {AuthanticateUser, CreateUser,CreateUser_v2,AuthanticateUser_v2}
