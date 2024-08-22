@@ -1,5 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../Postgres/db.mjs';
+import { PrismaClient } from '@prisma/client';
+import { where } from 'sequelize';
+const prisma = new PrismaClient();
+
 
 const setData = async(reqs,resp) => {
 
@@ -76,7 +80,6 @@ const getDataById = async (req, res) => {
         });
     }
 };
-
 const updateData = async(reqs,resp) => {
     const { id } = reqs.params;
     const {title, description, status} = reqs.body;
@@ -127,4 +130,157 @@ const deleteData = async (req, res) => {
 }
 
 
-export {setData,getData,getDataById,updateData,deleteData};
+// v2...
+
+const setData_v2 = async(reqs,resp) => {
+
+    const {title,description,status} = reqs.body;
+    const created_at = formatDateToDDMMYY(new Date);
+    const modified_at = formatDateToDDMMYY(new Date);
+
+    try{
+
+        const result = await prisma.todo.create({data:{
+            title,description,status,created_at,modified_at
+        }})
+        console.log('todo added sucessfully !',result);
+        resp.status(201).json({
+            message:"todo item added",
+        })        
+
+    }catch(err){
+        console.error('todo not added', err);
+        resp.status(500).json({
+            message:"todo item not added",
+            error:err,
+        })
+    }
+
+}
+const getData_v2 = async (reqs,resp) => {
+    try{
+
+        const result = await prisma.todo.findMany()
+
+        console.log('todo get it sucessfully !',result);
+        resp.status(201).json({
+            message:"todo get it",
+            data:result
+        })        
+
+    }catch(err){
+        console.error('not get todo ', err);
+        resp.status(500).json({
+            message:"todo item not get it",
+            error:err,
+        })
+    }
+}
+const getDataById_v2 = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Find the Todo item by id
+        const result = await prisma.todo.findUnique({
+            where: { id: Number(id) },
+        });
+
+        // Check if the todo item exists
+        if (!result) {
+            return res.status(404).json({
+                message: "Todo item not found"
+            });
+        }
+
+        console.log('Todo retrieved successfully!', result);
+        res.status(200).json({
+            message: "Todo retrieved successfully",
+            data: result // Directly return the result, as there's no rows array
+        });
+
+    } catch (err) {
+        console.error('Error retrieving todo item', err);
+        res.status(500).json({
+            message: "Error retrieving todo item",
+            error: err.message,
+        });
+    }
+};
+const updateData_v2 = async(req,res) => {
+    const { id } = req.params;
+    const {title, description, status} = req.body;
+    const modified_at = formatDateToDDMMYY(new Date());
+
+    try {
+        const result = await prisma.todo.update({
+            where: { id: Number(id) },
+            data: {
+                title,       
+                description, 
+                status,
+                modified_at      
+            },
+        });
+
+        console.log('Todo updated successfully!', result);
+        res.status(201).json({
+            message:"todo updated sucessfully"
+        }); 
+
+    } catch (err) {
+        console.error('Error updating todo item', err);
+
+        if (err.code === 'P2025') { 
+            return res.status(404).json({
+                message: "Todo item not found",
+                error: err.message,
+            });
+        }
+
+        res.status(500).json({
+            message: "Error updating todo item",
+            error: err.message,
+        });
+    }
+}
+const deleteData_v2 = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const result = await prisma.todo.delete({
+            where: { id: Number(id) },
+        });
+
+        console.log('Todo deleted successfully!', result);
+        res.status(200).json({
+            message: "Todo deleted successfully",
+            data: result 
+        });
+
+    } catch (err) {
+        console.error('Error deleting todo item', err);
+
+        if (err.code === 'P2025') { 
+            return res.status(404).json({
+                message: "Todo item not found",
+                error: err.message,
+            });
+        }
+
+        res.status(500).json({
+            message: "Error deleting todo item",
+            error: err.message,
+        });
+    }
+};
+
+function formatDateToDDMMYY(date) {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+  
+    return `${day}/${month}/${year}`;
+  }
+  
+
+export {setData,getData,getDataById,updateData,deleteData,setData_v2,getDataById_v2,updateData_v2,deleteData_v2,getData_v2};

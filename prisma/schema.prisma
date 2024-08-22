@@ -1,0 +1,24 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url = "postgresql://shamsi:abc123@127.0.0.1:5432/demo"
+}
+
+model User {
+    id Int @id @default(autoincrement())
+    name String
+    email String
+    password String
+}
+
+model todo {
+    id Int @id @default(autoincrement())
+    title String
+    description String
+    status String
+    created_at String 
+    modified_at String
+}
