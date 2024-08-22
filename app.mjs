@@ -17,7 +17,7 @@ app.use(bodyParser.json());
 
 // api's..
 
-app.use('/auth/v1',Auth);
+app.use('/auth',Auth);
 app.use("/todo",todo);
 app.use((reqs, resp) => {
     resp.status(404).json({

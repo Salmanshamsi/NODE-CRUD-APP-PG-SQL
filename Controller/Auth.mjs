@@ -1,11 +1,15 @@
 import pool from "../Postgres/db.mjs"
+import { v4 as uuidv4 } from 'uuid';
+
 
 const CreateUser = async (reqs, resp) => {
-    const { id, name, email, password } = reqs.body;
+    const { name, email, password } = reqs.body;
+
+    const id = uuidv4();
 
     try {
         const result = await pool.query(
-            `INSERT INTO "User" (id, Name, email, password) VALUES ($1, $2, $3, $4)`,
+            `INSERT INTO "users" (id, name, email, password) VALUES ($1, $2, $3, $4)`,
             [id, name, email, password]
         );
 
@@ -32,8 +36,32 @@ const CreateUser = async (reqs, resp) => {
 };
 
 
-const AuthanticateUser = (reqs,resp) => {
+const AuthanticateUser = async (reqs,resp) => {
     
+    const {email, password} = reqs.body;
+
+    try{
+
+        const result = await pool.query(
+            `SELECT * FROM "users" WHERE "email" = $1 AND "password" = $2`,
+            [email, password]
+        );
+        
+        console.log(result);
+
+        resp.status(201).json({
+            message:"sign in sucessfully",
+        })
+
+    }catch(err){
+        console.error('error signin-',err);
+        resp.status(500).json({
+            message: 'Failed to signin user',
+            error: err.message
+        })
+    }
+
+
 }
 
 export {AuthanticateUser, CreateUser}
