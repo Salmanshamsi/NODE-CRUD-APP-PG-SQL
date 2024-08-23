@@ -3,7 +3,8 @@ import { config } from "dotenv"
 import bodyParser from "body-parser";
 import todo from "./Routes/todo.mjs";
 import Auth from './Routes/Auth.mjs'
-import pool from "./Postgres/db.mjs";
+// import pool from "./Postgres/db.mjs";
+import sequelize from "./config/database.mjs";
 
 
 // config..
@@ -28,13 +29,13 @@ app.use((reqs, resp) => {
 // app listning..
 app.listen(PORT, () => {
     // DBConnection...
-    pool.connect((err, client, release) => {
-        if (err) {
-        console.error('Failed to connect to the database:', err.stack);
-        } else {
-        console.log('Connected to the database');
-        release();
-        }
-    });
+
+    sequelize.sync().then(()=>{
+        console.log("database connected !");
+    }).catch(()=>{
+        console.log("database not connected !");
+    })
+
     console.log("server started");
 })
+

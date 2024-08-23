@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import Todo from "../models/Todo.mjs";
 import pool from '../Postgres/db.mjs';
 
 const setData = async(reqs,resp) => {
@@ -129,21 +130,13 @@ const deleteData = async (req, res) => {
 
 const setData_v3 = async(reqs,resp) => {
 
-    const {title,description,status} = reqs.body;
-    const id = uuidv4();
-    const created_at = new Date();
-    const updated_at = new Date();
-
     try{
 
-        const result = await pool.query(
-            `INSERT INTO "todo" (id, title, description, status, created_at, updated_at) 
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-             [id,title, description, status, created_at, updated_at]
-        );
+        const result = await Todo.create(reqs.body)
         console.log('todo added sucessfully !',result);
         resp.status(201).json({
             message:"todo item added",
+            data:result
         })        
 
     }catch(err){
@@ -158,14 +151,12 @@ const setData_v3 = async(reqs,resp) => {
 const getData_v3 = async (reqs,resp) => {
     try{
 
-        const result = await pool.query(
-            `SELECT * FROM "todo"`
-        );
+        const result = await Todo.findAll()
 
         console.log('todo get it sucessfully !',result);
         resp.status(201).json({
             message:"todo get it",
-            data:result.rows
+            data:result
         })        
 
     }catch(err){
@@ -180,19 +171,19 @@ const getDataById_v3 = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const result = await pool.query(`SELECT * FROM todo WHERE id = $1`, [id]);
-
-        if (result.rowCount === 0) {
-            return res.status(404).json({
-                message: "Todo item not found"
-            });
-        }
+        const result = await Todo.findOne({where:{id:id}});
 
         console.log('Todo retrieved successfully!', result);
-        res.status(200).json({
-            message: "Todo retrieved successfully",
-            data: result.rows[0]
-        });
+        if(!result){
+            res.status(201).json({
+                message:"todo not found"
+            })
+        }else{
+            res.status(200).json({
+                message: "Todo retrieved successfully",
+                data: result
+            });
+        }
 
     } catch (err) {
         console.error('Error retrieving todo item', err);
@@ -205,17 +196,24 @@ const getDataById_v3 = async (req, res) => {
 const updateData_v3 = async(reqs,resp) => {
     const { id } = reqs.params;
     const {title, description, status} = reqs.body;
-    const updated_at = new Date();
 
     try {
-        const result = await pool.query(`UPDATE todo SET title = $1,description = $2,status = $3,updated_at = $4
-                                         WHERE id = $5
-                                         RETURNING *;`, [title,description,status,updated_at,id]);
+        const [affectedRows] = await Todo.update(
+            { title: title,status: status,content: description },
+            { where: { id: id} }  
+          );
 
-        console.log('Todo updated successfully!', result);
-        resp.status(201).json({
-            message:"todo updated sucessfully"
-        }); 
+        console.log('Todo updated successfully!', affectedRows);
+        
+        if(!affectedRows > 0){
+            resp.status(201).json({
+                message:"todo not found whith  this id"
+            });
+        }else{
+            resp.status(201).json({
+                message:"todo updated sucessfully"
+            });
+        }
 
     } catch (err) {
         console.error('Error updating todo item', err);
@@ -229,14 +227,13 @@ const deleteData_v3 = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const result = await pool.query(`DELETE FROM todo WHERE id = $1 RETURNING *`, [id]);
+        const result = await Todo.destroy({ where: { id: id} });
 
-        if (result.rowCount === 0) {
+        if (!result > 0) {
             return res.status(404).json({
                 message: "Todo item not found"
             });
         }
-
         console.log('Todo deleted successfully!', result);
         res.status(201).json({
             message:"todo deleted sucessfully"
