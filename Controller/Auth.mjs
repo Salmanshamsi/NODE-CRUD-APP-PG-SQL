@@ -1,16 +1,21 @@
 import pool from "../Postgres/db.mjs"
 import { v4 as uuidv4 } from 'uuid';
+import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken"
+import { config } from "dotenv"
+config({path:`${process.cwd()}/.env`});
 
 
 const CreateUser = async (reqs, resp) => {
     const { name, email, password } = reqs.body;
 
     const id = uuidv4();
+    const hashPass = await bcrypt.hash(password, 12);
 
     try {
         const result = await pool.query(
             `INSERT INTO "users" (id, name, email, password) VALUES ($1, $2, $3, $4)`,
-            [id, name, email, password]
+            [id, name, email, hashPass]
         );
 
         console.log(result);
@@ -20,7 +25,8 @@ const CreateUser = async (reqs, resp) => {
             data: {
                 id,
                 name,
-                email
+                email,
+                hashPass
             }
         });
     } catch (error) {
@@ -34,34 +40,43 @@ const CreateUser = async (reqs, resp) => {
 
     return;
 };
+const AuthanticateUser = async (req, resp) => {
+    const { email, password } = req.body;
 
-
-const AuthanticateUser = async (reqs,resp) => {
-    
-    const {email, password} = reqs.body;
-
-    try{
-
+    try {
         const result = await pool.query(
-            `SELECT * FROM "users" WHERE "email" = $1 AND "password" = $2`,
-            [email, password]
+            `SELECT * FROM "users" WHERE "email" = $1`,
+            [email]
         );
-        
-        console.log(result);
 
-        resp.status(201).json({
-            message:"sign in sucessfully",
-        })
+        if (result.rows.length === 0) {
+            return resp.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
 
-    }catch(err){
-        console.error('error signin-',err);
+        const user = result.rows[0];
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return resp.status(401).json({
+                message: "Invalid email or password",
+            });
+        }
+        var token = jwt.sign({email}, process.env.token);
+        resp.status(200).json({
+            message: "Sign in successfully",
+            token:token,
+        });
+
+    } catch (err) {
+        console.error('Error signing in:', err);
         resp.status(500).json({
-            message: 'Failed to signin user',
-            error: err.message
-        })
+            message: 'Failed to sign in user',
+            error: err.message,
+        });
     }
+};
 
-
-}
 
 export {AuthanticateUser, CreateUser}

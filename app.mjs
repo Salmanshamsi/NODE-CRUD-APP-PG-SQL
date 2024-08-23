@@ -4,6 +4,7 @@ import bodyParser from "body-parser";
 import todo from "./Routes/todo.mjs";
 import Auth from './Routes/Auth.mjs'
 import pool from "./Postgres/db.mjs";
+import { verifyUser } from "./utils.mjs";
 
 
 // config..
@@ -18,7 +19,7 @@ app.use(bodyParser.json());
 // api's..
 
 app.use('/auth',Auth);
-app.use("/todo",todo);
+app.use("/todo",verifyUser,todo);
 app.use((reqs, resp) => {
     resp.status(404).json({
         error: 'Page not found'
