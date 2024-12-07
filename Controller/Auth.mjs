@@ -1,4 +1,5 @@
 import pool from "../Postgres/db.mjs"
+import User from "../models/User.mjs"
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -34,8 +35,6 @@ const CreateUser = async (reqs, resp) => {
 
     return;
 };
-
-
 const AuthanticateUser = async (reqs,resp) => {
     
     const {email, password} = reqs.body;
@@ -62,6 +61,34 @@ const AuthanticateUser = async (reqs,resp) => {
     }
 
 
-}
+};
+const CreateUser_v3 = async (req, res) => {
+    try {
+        const user = await User.create(req.body);
+        res.status(201).json(user);
+      } catch (err) {
+        res.status(400).json({ error: err.message });
+        console.log(err)
+      }
+    return;
+};
+const AuthanticateUser_v3 = async (req,res) => {
+    
+    const {email, password} = req.body;
 
-export {AuthanticateUser, CreateUser}
+    try {
+        const user = await User.findAll({where:{email:email,password:password}});
+        if(!user){
+            res.status(201).json("user not found !");
+        }else{
+            res.status(201).json(user);
+        }
+      } catch (err) {
+        res.status(400).json({ error: err.message });
+        console.log(err)
+      }
+    return;
+
+};
+
+export {AuthanticateUser, CreateUser,CreateUser_v3,AuthanticateUser_v3}
